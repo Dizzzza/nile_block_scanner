@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: tron_monitor
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tron-monitor:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/tron_monitor
+      TRONGRID_API_URL: https://api.trongrid.io
+      TRONGRID_API_KEY: your_api_key_here
+      NETWORK_ID: 1
+      NETWORK_NAME: mainnet
+      SCANNER_TABLE_NAME: scanned_blocks
+      SCAN_INTERVAL: 3000
+      BATCH_SIZE: 10
+      START_BLOCK: 0
+      PORT: 3000
+      NODE_ENV: production
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # Nile testnet monitor (optional)
+  tron-monitor-nile:
+    build: .
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/tron_monitor
+      TRONGRID_API_URL: https://nile.trongrid.io
+      TRONGRID_API_KEY: your_api_key_here
+      NETWORK_ID: 2
+      NETWORK_NAME: nile
+      SCANNER_TABLE_NAME: nile_scanned_blocks
+      SCAN_INTERVAL: 3000
+      BATCH_SIZE: 10
+      START_BLOCK: 0
+      PORT: 3000
+      NODE_ENV: production
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs-nile:/app/logs
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
