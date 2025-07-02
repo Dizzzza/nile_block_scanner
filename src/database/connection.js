@@ -2,11 +2,15 @@ const { Sequelize } = require("sequelize")
 const config = require("../config")
 const logger = require("../utils/logger")
 
-const sequelize = new Sequelize(config.database.url, {
+const { username, password, host, port, database } = config.database;
+
+const sequelize = new Sequelize(database, username, password, {
+  host,
+  port,
   dialect: config.database.dialect,
   logging: config.database.logging,
-  pool: config.database.pool,
-})
+  pool: config.database.pool
+});
 
 const testConnection = async () => {
   try {
