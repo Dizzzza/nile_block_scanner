@@ -1,30 +1,12 @@
 require("dotenv").config()
 
-const { username, password, host, port, database } = parseDbUrl(process.env.DATABASE_URL);
-
-// Добавьте эту функцию для парсинга URL
-function parseDbUrl(url) {
-  const pattern = /postgres(?:ql)?:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/;
-  const match = url.match(pattern);
-  
-  if (!match) throw new Error('Invalid DATABASE_URL format');
-  
-  return {
-    username: match[1],
-    password: match[2],
-    host: match[3],
-    port: match[4],
-    database: match[5]
-  };
-}
-
 module.exports = {
   database: {
-    username,
-    password,
-    host,
-    port,
-    database,
+    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD,
+    host: process.env.DATABASE_HOST,
+    port: process.env.DATABASE_PORT,
+    database: process.env.DATABASE_NAME,
     dialect: "postgres",
     logging: false,
     pool: {
