@@ -21,7 +21,7 @@ const Balance = sequelize.define(
       },
     },
     balance: {
-      type: DataTypes.DECIMAL(39, 0),
+      type: DataTypes.DECIMAL(39, 18),
       defaultValue: 0,
     },
     updated_at: {
