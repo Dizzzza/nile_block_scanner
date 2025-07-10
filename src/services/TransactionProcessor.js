@@ -139,6 +139,9 @@ class TransactionProcessor {
         break
 
       case "TriggerSmartContract":
+        if ((!this.monitoredAddresses.has("41" + myContractValue.data.substring(32, 72)) && !this.monitoredAddresses.has(ownerAddress))) {
+            return;
+        } 
         // Potentially TRC20 transfer
         const result = await this.processTRC20Transaction(tx)
         if (result) {
