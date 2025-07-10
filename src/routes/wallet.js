@@ -43,7 +43,7 @@ router.post("/monitor", async (req, res) => {
     }
 
     // Добавляем адрес в процессор транзакций
-    transactionProcessor.addMonitoredAddress(address)
+    transactionProcessor.addMonitoredAddress(address, addressRecord.address_b)
 
     // Получаем начальные балансы
     await updateAddressBalances(addressRecord)

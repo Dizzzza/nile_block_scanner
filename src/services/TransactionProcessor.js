@@ -38,6 +38,9 @@ class TransactionProcessor {
       this.monitoredAddresses.clear()
       addresses.forEach((addr) => {
         this.monitoredAddresses.add(addr.address.toLowerCase())
+        if (addr.address_b) {
+          this.monitoredAddresses.add(addr.address_b.toLowerCase())
+        }
         logger.debug(`Added address to monitoring: ${addr.address}`)
       })
 
@@ -101,10 +104,17 @@ class TransactionProcessor {
     const contractType = contract.type
     const contractData = contract.parameter.value
 
+    const myContractValue = tx.raw_data.contract[0].parameter.value;
+    const ownerAddress = myContractValue.owner_address;
+
     let fromAddress = ""
     let toAddress = ""
     let amount = "0"
     let tokenInfo = null
+
+    if ((!this.monitoredAddresses.has("41" + myContractValue.data.substring(32, 72)) && !this.monitoredAddresses.has(ownerAddress)) && !this.monitoredAddresses.has(myContractValue.to_address)) {
+      return;
+    }
 
     switch (contractType) {
       case "TransferContract":
@@ -276,8 +286,11 @@ class TransactionProcessor {
     return hex
   }
 
-  addMonitoredAddress(address) {
-    this.monitoredAddresses.add(address.toLowerCase())
+  addMonitoredAddress(address, address_b) {
+      this.monitoredAddresses.add(address.toLowerCase());
+      if (address_b) {
+          this.monitoredAddresses.add(address_b.toLowerCase());
+      }
   }
 
   removeMonitoredAddress(address) {
