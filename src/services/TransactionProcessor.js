@@ -112,12 +112,11 @@ class TransactionProcessor {
     let amount = "0"
     let tokenInfo = null
 
-    if ((!this.monitoredAddresses.has("41" + myContractValue.data.substring(32, 72)) && !this.monitoredAddresses.has(ownerAddress)) && !this.monitoredAddresses.has(myContractValue.to_address)) {
-      return;
-    }
-
     switch (contractType) {
       case "TransferContract":
+        if ((!this.monitoredAddresses.has(myContractValue.to_address) && !this.monitoredAddresses.has(ownerAddress))) {
+            return;
+        }
         // TRX transfer
         fromAddress = this.hexToBase58(contractData.owner_address)
         toAddress = this.hexToBase58(contractData.to_address)
@@ -126,9 +125,13 @@ class TransactionProcessor {
         break
 
       case "TransferAssetContract":
+        if ((!this.monitoredAddresses.has(myContractValue.to_address) && !this.monitoredAddresses.has(ownerAddress))) {
+            return;
+        }
         // TRC10 transfer
         fromAddress = this.hexToBase58(contractData.owner_address)
         toAddress = this.hexToBase58(contractData.to_address)
+        
         amount = contractData.amount.toString()
         // Используем asset_name для поиска токена по token_key
         const assetName = contractData.asset_name
