@@ -62,7 +62,26 @@ class BlockScanner {
       })
 
       if (lastScannedBlock) {
-        this.currentBlock = parseFloat(lastScannedBlock.num) + 1
+        // Проверяем, есть ли пропуски в отсканированных блоках
+        const nextBlock = Number.parseFloat(lastScannedBlock.num) + 1
+
+        // Проверяем несколько блоков назад на случай пропусков
+        let startFromBlock = nextBlock
+        for (let i = 1; i <= 10; i++) {
+          const checkBlock = Number.parseFloat(lastScannedBlock.num) - i
+          if (checkBlock < 0) break
+
+          const exists = await this.scannedBlocksModel.findOne({
+            where: { num: checkBlock },
+          })
+
+          if (!exists) {
+            startFromBlock = checkBlock
+            logger.info(`Found gap at block ${checkBlock}, will start from there`)
+          }
+        }
+
+        this.currentBlock = startFromBlock
         logger.info(`Resuming from block ${this.currentBlock} (table: ${this.scannerTableName})`)
       } else {
         this.currentBlock = config.scanner.startBlock
@@ -104,7 +123,7 @@ class BlockScanner {
       )
 
       for (let i = 0; i < blocksToScan; i++) {
-        const blockNumber = parseFloat(this.currentBlock) + i
+        const blockNumber = Number.parseFloat(this.currentBlock) + i
         await this.scanBlock(blockNumber)
       }
 
@@ -120,6 +139,16 @@ class BlockScanner {
 
     while (retries < this.maxRetries) {
       try {
+        // Проверяем, не был ли блок уже отсканирован
+        const existingBlock = await this.scannedBlocksModel.findOne({
+          where: { num: blockNumber },
+        })
+
+        if (existingBlock) {
+          logger.debug(`Block ${blockNumber} already scanned, skipping (${this.scannerTableName})`)
+          return
+        }
+
         const blockData = await tronGridService.getBlockByNumber(blockNumber)
 
         if (!blockData || !blockData.blockID) {
@@ -132,16 +161,31 @@ class BlockScanner {
           await transactionProcessor.processBlockTransactions(blockData)
         }
 
-        // Сохраняем информацию о отсканированном блоке в правильную таблицу
-        await this.scannedBlocksModel.create({
-          num: blockNumber,
-          hash: blockData.blockID,
+        // Используем findOrCreate для безопасной вставки
+        const [scannedBlock, created] = await this.scannedBlocksModel.findOrCreate({
+          where: { num: blockNumber },
+          defaults: {
+            num: blockNumber,
+            hash: blockData.blockID,
+          },
         })
 
-        logger.debug(`Block ${blockNumber} scanned successfully (${this.scannerTableName})`)
+        if (created) {
+          logger.debug(`Block ${blockNumber} scanned successfully (${this.scannerTableName})`)
+        } else {
+          logger.debug(`Block ${blockNumber} was already scanned by another process (${this.scannerTableName})`)
+        }
+
         return
       } catch (error) {
         retries++
+
+        // Если это ошибка уникального ограничения, просто пропускаем блок
+        if (error.name === "SequelizeUniqueConstraintError") {
+          logger.debug(`Block ${blockNumber} already exists, skipping (${this.scannerTableName})`)
+          return
+        }
+
         logger.error(`Error scanning block ${blockNumber} (attempt ${retries}):`, error.message)
 
         if (retries < this.maxRetries) {
