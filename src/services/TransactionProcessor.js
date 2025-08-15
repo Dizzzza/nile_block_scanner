@@ -299,8 +299,9 @@ class TransactionProcessor {
       }
   }
 
-  removeMonitoredAddress(address) {
+  removeMonitoredAddress(address, address_b) {
     this.monitoredAddresses.delete(address.toLowerCase())
+    this.monitoredAddresses.delete(address_b.toLowerCase())
   }
 
   async reloadMonitoredAddresses() {

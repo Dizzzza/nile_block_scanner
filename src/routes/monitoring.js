@@ -54,49 +54,4 @@ router.post('/reload', async (req, res) => {
   }
 })
 
-// Включить/выключить мониторинг для адреса
-router.patch('/addresses/:address/toggle', async (req, res) => {
-  try {
-    const { address } = req.params
-    const { is_monitoring } = req.body
-
-    const addressRecord = await Address.findOne({
-      where: {
-        address: address,
-        network_id: config.network.id
-      }
-    })
-
-    if (!addressRecord) {
-      return res.status(404).json({
-        success: false,
-        error: 'Address not found'
-      })
-    }
-
-    await addressRecord.update({ is_monitoring })
-
-    if (is_monitoring) {
-      transactionProcessor.addMonitoredAddress(address)
-    } else {
-      transactionProcessor.removeMonitoredAddress(address)
-    }
-
-    res.json({
-      success: true,
-      message: `Monitoring ${is_monitoring ? 'enabled' : 'disabled'} for address ${address}`,
-      data: {
-        address: address,
-        is_monitoring: is_monitoring
-      }
-    })
-  } catch (error) {
-    logger.error('Error toggling address monitoring:', error)
-    res.status(500).json({
-      success: false,
-      error: 'Failed to toggle address monitoring'
-    })
-  }
-})
-
 module.exports = router

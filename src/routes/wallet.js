@@ -75,11 +75,10 @@ router.post("/stopMonitor", async (req, res) => {
       return res.status(404).json({ error: "Address not found" })
     }
 
-    // Останавливаем мониторинг
-    await addressRecord.update({ is_monitoring: false })
-
-    // Удаляем из процессора транзакций
-    transactionProcessor.removeMonitoredAddress(address)
+    await Promise.all([
+      addressRecord.update({ is_monitoring: false }),
+      transactionProcessor.removeMonitoredAddress(address, addressRecord.address_b)
+    ])
 
     logger.info(`Stopped monitoring address: ${address}`)
 
